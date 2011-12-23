@@ -141,6 +141,7 @@ public class greplog {
               tick(str, date);
               if (m.groupCount() > 0) {
                 StringBuilder sb = new StringBuilder(str);
+                sb.append(" ==> ");
                 for (int i = 1; i <= m.groupCount(); i++) {
                   sb.append(" (( ").append(m.group(i)).append(" )) ");
                 }
