@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A dead simple logs cruncher.
+ * A dead simple, hacky, logs cruncher.
  *
  * @author jochen@pedesis.org (Jochen Bekmann)
  */
@@ -142,15 +142,18 @@ public class greplog {
               if (m.groupCount() > 0) {
                 StringBuilder sb = new StringBuilder(str);
                 for (int i = 1; i <= m.groupCount(); i++) {
-                  sb.append(" :: ").append(m.group(i));
+                  sb.append(" (( ").append(m.group(i)).append(" )) ");
                 }
                 tick(sb.toString(), date);
               }
-              break;
-            } else if (nonmatch) {
-              tick("nomatch :: " + errorLevel + " " + itemMatcher.group(3), date);
+              return;
             }
           }
+
+          if (nonmatch) {
+            tick("nomatch :: " + errorLevel + " " + itemMatcher.group(3), date);
+          }
+
         } catch (ParseException e) {
           e.printStackTrace();
         }
@@ -159,17 +162,9 @@ public class greplog {
 
     public void dumpStats(LineHandler handler) {
       handler.handle("lineCount: " + lineCount, null);
-      ArrayList<String> as;
-
-      List<String> keys = new ArrayList<String>(metrics.keySet());
-      Collections.sort(keys);
-      for (String key : keys) {
-
-        final Metric metric = metrics.get(key);
-        handler.handle(key + " = " + metric.toString(), null);
-      }
 
       handler.handle("=============================================", null);
+      handler.handle("              BY FREQUENCY", null);
       handler.handle("=============================================", null);
 
       List<Map.Entry<String, Metric>> invSorted = Lists.newArrayList();
@@ -185,7 +180,17 @@ public class greplog {
         }
       });
       for (Map.Entry<String, Metric> entry : invSorted) {
-        handler.handle(entry.getValue() + " --> " + entry.getKey(), null);
+        handler.handle(entry.getValue() + " = " + entry.getKey(), null);
+      }
+
+      handler.handle("=============================================", null);
+      handler.handle("              ALPHABETIC", null);
+      handler.handle("=============================================", null);
+
+      List<String> keys = new ArrayList<String>(metrics.keySet());
+      Collections.sort(keys);
+      for (String key : keys) {
+        handler.handle(key + " = " + metrics.get(key).toString(), null);
       }
     }
   }
@@ -227,7 +232,7 @@ public class greplog {
           outputHandler.handle("Config: nonmatch set to " + nmm.group(1), null);
         } else {
           patterns.add(line);
-          outputHandler.handle("Config: pattern = " + line, null);
+          // outputHandler.handle("Config: pattern = " + line, null);
         }
       }
     }
@@ -272,7 +277,7 @@ public class greplog {
 
           // **ASSUMPTION** that slf4j '{}' notation is used!
           String regex = statement.replaceAll("\\{\\}", "\\\\E(.*)\\\\Q");
-          outputHandler.handle(".*" + loggerClass + ": " + regex, filename);
+          outputHandler.handle(loggerClass + ": " + regex, filename);
         }
       }
     }
@@ -285,14 +290,17 @@ public class greplog {
     }
 
     if ("crunch".equals(args[0])) {
-      ConfigFileHandler rph = new ConfigFileHandler(PRINT_TO_STDOUT_HANDLER);
-      readFile(args[1], rph);
-      if (!rph.greplogconfig) {
+      ConfigFileHandler configHandler = new ConfigFileHandler(PRINT_TO_STDOUT_HANDLER);
+      readFile(args[1], configHandler);
+      if (!configHandler.greplogconfig) {
         System.err.println("Config file not passed, or it doesn't contain \"greplogconfig\" string.");
         return;
+      } else {
+        System.out.println("Config: " + configHandler.patterns.size() + " patterns loaded.");
       }
 
-      LogHandler logHandler = new LogHandler(rph.patterns, rph.logLevel, rph.nonmatch);
+      LogHandler logHandler = new LogHandler(configHandler.patterns, configHandler.logLevel,
+          configHandler.nonmatch);
       for (int i = 2; i < args.length; i++) {
         readFile(args[i], logHandler);
       }
