@@ -1,6 +1,6 @@
 A dead simple, hacky, logs cruncher.
 
-This implementation makes a bunch of assumptions such as the log format for "crunching" logs, and the logger you use in "suggest" mode. The code was written with SLF4J in mind, but could be fairly easily adapted to other use.
+This implementation makes a bunch of assumptions such as the log format for "crunching" logs, and the logger you use in "suggest" mode. The code was written with SLF4J in mind, but could be fairly easily adapted to other use. Look at the source for more info.
 
 To get going:
 mvn clean compile assembly:single
